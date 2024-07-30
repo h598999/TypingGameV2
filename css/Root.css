@@ -1,0 +1,35 @@
+:root {
+  background-color: #323437;
+}
+
+.button {
+  
+  padding: 10px 20px;
+  font-size: 16px;
+  color: white;
+  background-color: darkgoldenrod;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: center;
+}
+
+
+.container {
+  display: flex;
+  justify-content: center;
+}
+
+.button:hover {
+  background-color: goldenrod;
+}
+
+h1{
+  text-align: "left";
+  color: darkgoldenrod;
+}
+
+p{
+  text-align: "center";
+  color: darkgoldenrod;
+}
