@@ -2,15 +2,42 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+  _ "github.com/go-sql-driver/mysql"
 	"path/filepath"
 	"text/template"
 )
 
 //The code that will be run
 func main(){
+  dsn := "root:JOnas0909@tcp(127.0.0.1:3306)/typinggame_users"
+
+  // Open the connection
+  db, err := sql.Open("mysql", dsn)
+  if err != nil {
+    log.Fatal("Error opening database:", err)
+  }
+  defer db.Close()
+
+  // Check the connection
+  err = db.Ping()
+  if err != nil {
+    log.Fatal("Error connecting to the database:", err)
+  }
+  fmt.Println("Successfully connected to the database!")
+
+  // Create the Users table
+  readTables := "DESCRIBE Users;"
+
+  result, err := db.Exec(readTables)
+  if err != nil {
+    log.Fatal("Error executing query:", err)
+  }
+    fmt.Println(result)
   //Returns a file server that returns a a handler that server HTTP requests with the contents of the file system
   fs := http.FileServer(http.Dir("Templates"))
   //Handles the handler for the given pattern

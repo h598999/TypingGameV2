@@ -17,6 +17,7 @@ body {
     text-align: center;
     margin-left: 100px;
     margin-right: 100px;
+    background-color: #323437;
 }
 
 .char {
@@ -39,6 +40,9 @@ body {
 .green {
     color: green;
 }
+.red{
+    color: red;
+}
 
 .container{
     text-align: center;
@@ -47,11 +51,11 @@ body {
 
 .cursor {
     position: absolute;
-    width: 1px;
+    width: 2.5px;
     height: 1.5em;
-    background-color: #000;
+    background-color: goldenrod;
     transition: left 0.1s, top 0.1s;
-    animation: blink 1s step-end infinite;
+    /* animation: blink 1s step-end infinite; */
 }
 
 @keyframes blink {

@@ -91,17 +91,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (index == 0){
         calc.start()
       }
+      wordDiv.children[index].classList.remove("red");
       wordDiv.children[index].classList.add("green");
       if (event.key === ' ') {
         wordCount++;
-        // console.log("Start: " + calc.startTime + "End: " + new Date())
-        // console.log("Index" + index, "Previndex" + prevIndex)
         prevIndex = calc.wordCompleted(index, prevIndex)
-        // console.log("WPM: " + calc.calculateWPM().wpm)
         wpmcontainer.innerHTML = "WPM: " + calc.calculateWPM().wpm
       }
       index++;
       updateCursorPosition();
+    } else {
+      wordDiv.children[index].classList.add("red");
     }
 
     if (index === Lorem.length) {
