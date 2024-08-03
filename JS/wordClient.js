@@ -1,6 +1,7 @@
 export async function fetchWords(){
   try {
-    const response = await fetch("/words")
+    const response = await fetch("/ten_words")
+    console.log("Test");
     if (!response.ok){
       throw new Error("WordClient failed, couldnt fetch the words");
     }

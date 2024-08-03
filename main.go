@@ -2,42 +2,23 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
+	"math/rand"
 	"net/http"
-  _ "github.com/go-sql-driver/mysql"
 	"path/filepath"
 	"text/template"
+	d "typinggame/internal"
+
+	_ "github.com/go-sql-driver/mysql"
 )
+
+var WordRepo d.WordRepo = d.NewWordRepo()
 
 //The code that will be run
 func main(){
-  dsn := "root:JOnas0909@tcp(127.0.0.1:3306)/typinggame_users"
-
-  // Open the connection
-  db, err := sql.Open("mysql", dsn)
-  if err != nil {
-    log.Fatal("Error opening database:", err)
-  }
-  defer db.Close()
-
-  // Check the connection
-  err = db.Ping()
-  if err != nil {
-    log.Fatal("Error connecting to the database:", err)
-  }
-  fmt.Println("Successfully connected to the database!")
-
-  // Create the Users table
-  readTables := "DESCRIBE Users;"
-
-  result, err := db.Exec(readTables)
-  if err != nil {
-    log.Fatal("Error executing query:", err)
-  }
-    fmt.Println(result)
+  dao := d.NewUserDAO()
+  dao.TestConn()
   //Returns a file server that returns a a handler that server HTTP requests with the contents of the file system
   fs := http.FileServer(http.Dir("Templates"))
   //Handles the handler for the given pattern
@@ -57,6 +38,7 @@ func main(){
   http.HandleFunc("/game", getGamePage)
   http.HandleFunc("/words", returnWords)
   http.HandleFunc("/lorem_ipsum", getLoremIpsum)
+  http.HandleFunc("/ten_words", getTenWords)
 
   fmt.Println("Server is running on localhost:8080")
 
@@ -91,20 +73,29 @@ func getGamePage(w http.ResponseWriter, r *http.Request){
   template.Execute(w, nil)
 }
 
+
 func getLoremIpsum(w http.ResponseWriter, r *http.Request){
 
-  lorem_ipsum := "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer auctor est eget nulla sagittis luctus. Duis turpis erat, vulputate sit amet luctus ut, mollis vitae odio. Mauris eget elit lacus. Nam nisl nulla, iaculis vitae velit eget, tristique condimentum lectus. Suspendisse tincidunt tempor rhoncus. Mauris commodo gravida consectetur. Praesent nec orci non erat condimentum ultrices. Quisque volutpat, augue in fermentum egestas, nibh erat aliquam enim, convallis faucibus ligula augue ac purus. Praesent vitae ex est. Maecenas fringilla purus ante, sed sagittis urna sollicitudin ac. Suspendisse tincidunt pretium enim quis auctor. Donec rhoncus pellentesque neque, nec venenatis dui iaculis et. Vestibulum lobortis accumsan consequat. Mauris tincidunt vitae nisl at ultricies. Quisque sed nisi eget nunc tincidunt malesuada. Praesent finibus, justo nec dapibus sagittis, urna sapien feugiat purus, id malesuada diam est eget nisl." 
-
-
+  lorem_ipsum := "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer auctor est eget nulla sagittis luctus. Duis turpis erat, vulputate sit amet luctus ut, mollis vitae odio. Mauris eget elit lacus. Nam nisl nulla, iaculis vitae velit eget, tristique condimentum lectus. Suspendisse tincidunt tempor rhoncus. Mauris commodo gravida consectetur. Praesent nec orci non erat condimentum ultrices. Quisque volutpat, augue in fermentum egestas, nibh erat aliquam enim, convallis faucibus ligula augue ac purus. Praesent vitae ex est. Maecenas fringilla purus ante, sed sagittis urna sollicitudin ac. Suspendisse tincidunt pretium enim quis auctor. Donec rhoncus pellentesque neque, nec venenatis dui iaculis et. Vestibulum lobortis accumsan consequat. Mauris tincidunt vitae nisl at ultricies. Quisque sed nisi eget nunc tincidunt malesuada. Praesent finibus, justo nec dapibus sagittis, urna sapien feugiat purus, id malesuada diam est eget nisl."
   w.Header().Set("Content-type", "Application/json")
   if err := json.NewEncoder(w).Encode(lorem_ipsum); err != nil{
     http.Error(w, err.Error(), http.StatusInternalServerError);
   }
-
 }
 
-func returnWords(w http.ResponseWriter, r *http.Request){
-  words := []string{ "Apple", "Banana", "Cherry" }
+func getTenWords(w http.ResponseWriter, r *http.Request){
+  index := rand.Int63n(40)
+  words, err := WordRepo.GetTenWords(index)
+  if err != nil{
+    http.Error(w, err.Error(), http.StatusInternalServerError);
+  }
+  w.Header().Set("Content-type", "Application/json");
+
+  if err := json.NewEncoder(w).Encode(words); err!=nil{
+    http.Error(w, err.Error(), http.StatusInternalServerError);
+  }
+}
+func returnWords(w http.ResponseWriter, r *http.Request){ words := []string{ "Apple", "Banana", "Cherry" }
 
   w.Header().Set("Content-type", "Application/json");
 
