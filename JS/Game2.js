@@ -1,5 +1,54 @@
 import { fetchLorem, fetchWords } from "./wordClient.js"
 import { WPMCalculator } from "./WPMCalculator.js"
+// import  {WebSocketManager} from "./websocket_game.js"
+
+function generateUniqueId() {
+  return 'xxxxxx'.replace(/x/g, function() {
+    return Math.floor(Math.random() * 16).toString(16);
+  }) + Date.now().toString(16);
+}
+
+const clientid = generateUniqueId()
+
+function setupWebSocket(lobbyId) {
+   let ws = new WebSocket("ws://localhost:8080/ws");
+
+    ws.addEventListener('open', function () {
+        console.log("Connected to the WebSocket");
+        const initialMessage = JSON.stringify({ lobbyid: lobbyId, clientid: clientid});
+        ws.send(initialMessage);
+    });
+
+    ws.addEventListener('error', function (event) {
+        console.error("WebSocket error observed:", event);
+    });
+
+    ws.addEventListener('close', function () {
+        console.log("WebSocket is closed now.");
+    });
+
+    ws.onmessage = function (event) {
+        const message = JSON.parse(event.data);
+      if ( message.clientid  != clientid){
+        console.log(message)
+      }
+    };
+  return ws
+}
+
+function sendMessage(ws, pressedchars, pressedspace) {
+    const message = {
+        clientid: clientid,
+        wpm: pressedchars, // Replace with dynamic username
+        index: pressedspace
+    };
+    if (ws) {
+        ws.send(JSON.stringify(message));
+    } else {
+        alert("WebSocket connection is not established.");
+    }
+}
+
 
 function wrapWords(words){
   var wordsStr = ""
@@ -65,11 +114,15 @@ function endGame(wpm){
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const Lorem = await fetchLorem();
+  const lobbyId = "1"
+
+  const ws = setupWebSocket(lobbyId)
+
+  // const Lorem = await fetchLorem();
   const calc = new WPMCalculator();
   const Words = await fetchWords();
-  console.log(Lorem)
-  console.log(Words)
+  // console.log(Lorem)
+  // console.log(Words)
   const dbwords = wrapWords(Words)
   let index = 0;
   let wordCount = 0;
@@ -109,6 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       index++;
       updateCursorPosition();
+      sendMessage(ws, String(calc.calculateWPM().wpm), String(index))
     } else {
       wordDiv.children[index].classList.add("red");
     }

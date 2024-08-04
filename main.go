@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"text/template"
 	d "typinggame/internal"
+	c "typinggame/multiplayer_backend"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -19,6 +20,7 @@ var WordRepo d.WordRepo = d.NewWordRepo()
 func main(){
   dao := d.NewUserDAO()
   dao.TestConn()
+  server := c.NewGameServer()
   //Returns a file server that returns a a handler that server HTTP requests with the contents of the file system
   fs := http.FileServer(http.Dir("Templates"))
   //Handles the handler for the given pattern
@@ -36,9 +38,13 @@ func main(){
   http.HandleFunc("/", getIndex)
   //This function enables the getGamePage function for the "/game" URL
   http.HandleFunc("/game", getGamePage)
+  http.HandleFunc("/multiplayer", getMultiplayerPage)
   http.HandleFunc("/words", returnWords)
   http.HandleFunc("/lorem_ipsum", getLoremIpsum)
   http.HandleFunc("/ten_words", getTenWords)
+  http.HandleFunc("/ws", server.HandleConnections)
+  http.HandleFunc("/lobby", getLobbyPage)
+  http.HandleFunc("/join", joinLobbyHandler)
 
   fmt.Println("Server is running on localhost:8080")
 
@@ -60,6 +66,15 @@ func getIndex(w http.ResponseWriter, r *http.Request){
   template.Execute(w, nil)
 }
 
+func getLobbyPage(w http.ResponseWriter, r *http.Request){
+  template, err := template.ParseFiles(filepath.Join("Templates", "Lobby.html"))
+  if err != nil{
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  template.Execute(w, nil)
+}
+
 //Function for returning the "Game.html" page
 func getGamePage(w http.ResponseWriter, r *http.Request){
   //template = Game.html, err = potential errors
@@ -70,6 +85,20 @@ func getGamePage(w http.ResponseWriter, r *http.Request){
     return
   }
   //Serves the html files
+  template.Execute(w, nil)
+}
+
+func getMultiplayerPage(w http.ResponseWriter, r *http.Request){
+  lobbyID := r.URL.Query().Get("lobbyid")
+  if lobbyID == "" {
+    http.Error(w, "Lobby ID is required", http.StatusBadRequest)
+    return
+  }
+  template, err := template.ParseFiles(filepath.Join("Templates", "Multiplayer.html"))
+  if err != nil{
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
   template.Execute(w, nil)
 }
 
@@ -103,3 +132,17 @@ func returnWords(w http.ResponseWriter, r *http.Request){ words := []string{ "Ap
     http.Error(w, err.Error(), http.StatusInternalServerError);
   }
 }
+
+func joinLobbyHandler(w http.ResponseWriter, r* http.Request){
+  if r.Method == http.MethodPost {
+    lobbyID := r.FormValue("lobbyid")
+    if lobbyID == ""{
+      http.Error(w, "Lobby id is requirede", http.StatusBadRequest)
+      return
+    }
+    http.Redirect(w, r, "/multiplayer?lobbyid="+lobbyID, http.StatusSeeOther)
+    return
+  }
+  http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+}
+

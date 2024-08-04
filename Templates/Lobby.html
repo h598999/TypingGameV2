@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multiplayer Page</title>
+    <script src="../JS/lobby.js" type="module" defer></script>
+    <link rel="stylesheet" href="../css/Root.css">
+    <link rel="stylesheet" href="../css/Multiplayer.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to Multiplayer!</h1>
+    </div>
+    <div id="join" class="Join">
+        <h2>Join a Lobby</h2>
+        <form method="post" action="/join">
+          <input id="join-input" name="lobbyid" placeholder="Lobby id:" required/>
+          <button id="join-button" type="submit">Join Lobby</button>
+        </form>
+    </div>
+    <div id="create" class="Create">
+        <h2>Create a New Lobby</h2>
+        <input id="create-input" placeholder="Lobby id:"/>
+        <button id="create-button" type="button">Create Lobby</button>
+    </div>
+</body>
+</html>
+
