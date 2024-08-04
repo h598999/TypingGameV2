@@ -7,10 +7,16 @@
   </head>
   <body>
     <div class="container">
-      <h1> Welcome to multiplayer! </h1>
+      <h1> Welcome to the lobby! <h1> 
+
     </div>
     <div id="messages">
     </div>
     <button type = "submit" class="button" id="sendmsgbutton"> Send Message </button>
+    <br>
+    <form method="post" action="/joinGame">
+       <input type="hidden" name="lobbyid" value="{{.LobbyID}}">
+      <button type = "submit" class="button" id="StartGame"> Start Game </button>
+    </form>
   </body>
 </html>

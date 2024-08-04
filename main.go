@@ -4,17 +4,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"text/template"
 	d "typinggame/internal"
 	c "typinggame/multiplayer_backend"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/sessions"
 )
 
 var WordRepo d.WordRepo = d.NewWordRepo()
+var store = sessions.NewCookieStore([]byte("secret"))
 
 //The code that will be run
 func main(){
@@ -45,6 +47,7 @@ func main(){
   http.HandleFunc("/ws", server.HandleConnections)
   http.HandleFunc("/lobby", getLobbyPage)
   http.HandleFunc("/join", joinLobbyHandler)
+  http.HandleFunc("/joinGame", joinGameHandler)
 
   fmt.Println("Server is running on localhost:8080")
 
@@ -67,7 +70,7 @@ func getIndex(w http.ResponseWriter, r *http.Request){
 }
 
 func getLobbyPage(w http.ResponseWriter, r *http.Request){
-  template, err := template.ParseFiles(filepath.Join("Templates", "Lobby.html"))
+  template, err := template.ParseFiles(filepath.Join("Templates", "LobbyJoiner.html"))
   if err != nil{
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
@@ -113,8 +116,18 @@ func getLoremIpsum(w http.ResponseWriter, r *http.Request){
 }
 
 func getTenWords(w http.ResponseWriter, r *http.Request){
-  index := rand.Int63n(40)
-  words, err := WordRepo.GetTenWords(index)
+
+  session, _ := store.Get(r, "session-name")
+  lobbyIDInterface := session.Values["lobbyid"]
+  lobbyID, ok := lobbyIDInterface.(string)
+  if !ok || lobbyID == ""{
+    http.Error(w, "Lobby id is required", http.StatusInternalServerError);
+  }
+  lobbyidnr, err := strconv.Atoi(lobbyID)
+  if err != nil{
+    http.Error(w, "Lobby ID is required", http.StatusBadRequest)
+  }
+  words, err := WordRepo.GetTenWords(int64(lobbyidnr))
   if err != nil{
     http.Error(w, err.Error(), http.StatusInternalServerError);
   }
@@ -133,6 +146,10 @@ func returnWords(w http.ResponseWriter, r *http.Request){ words := []string{ "Ap
   }
 }
 
+type PageData struct {
+    LobbyID string
+}
+
 func joinLobbyHandler(w http.ResponseWriter, r* http.Request){
   if r.Method == http.MethodPost {
     lobbyID := r.FormValue("lobbyid")
@@ -140,7 +157,25 @@ func joinLobbyHandler(w http.ResponseWriter, r* http.Request){
       http.Error(w, "Lobby id is requirede", http.StatusBadRequest)
       return
     }
+    session, _ := store.Get(r, "session-name")
+    session.Values["lobbyid"] = lobbyID
+    session.Save(r,w)
     http.Redirect(w, r, "/multiplayer?lobbyid="+lobbyID, http.StatusSeeOther)
+    return
+  }
+  http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+}
+
+func joinGameHandler(w http.ResponseWriter, r* http.Request){
+  if r.Method == http.MethodPost {
+    session, _ := store.Get(r, "session-name")
+    lobbyIDInterface := session.Values["lobbyid"]
+    lobbyID, ok := lobbyIDInterface.(string)
+    if !ok || lobbyID == ""{
+      http.Error(w, "Lobby id is required", http.StatusBadRequest)
+      return
+    }
+    http.Redirect(w, r, "/game?lobbyid="+lobbyID, http.StatusSeeOther)
     return
   }
   http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

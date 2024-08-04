@@ -1,4 +1,6 @@
 console.log("Hello from multiplayer");
+const params = new URLSearchParams(window.location.search);
+const lobbyId = params.get('lobbyid');
 
 
 export function setupWebSocket(lobbyId) {
@@ -20,6 +22,11 @@ export function setupWebSocket(lobbyId) {
 
     ws.onmessage = function (event) {
         const message = JSON.parse(event.data);
+        if (message.type == "state"){
+          if (message.state == "start"){
+            window.location.href = "/game?lobbyid="+lobbyId;
+          }
+        }
         console.log(message)
     };
   return ws
@@ -45,10 +52,11 @@ export function createLobby() {
     }
 }
 
-export function sendMessage(ws, pressedchars, pressedspace) {
+export function sendMessage(ws, state) {
     const message = {
-        wpm: pressedchars, // Replace with dynamic username
-        index: pressedspace
+        type: "state",
+        clientid: 0,
+        state: state
     };
     if (ws) {
         ws.send(JSON.stringify(message));
@@ -58,15 +66,15 @@ export function sendMessage(ws, pressedchars, pressedspace) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(window.location.search);
-  const lobbyId = params.get('lobbyid');
   let charspressed = 0
   let spacepressed = 0
 
   if (lobbyId) {
     const ws = setupWebSocket(lobbyId);
     const sendmsdbutton = document.getElementById("sendmsgbutton")
-    sendmsdbutton.addEventListener('click', () => sendMessage(ws))
+    sendmsdbutton.addEventListener('click', () => Console.log("start"))
+    const startgameButton = document.getElementById("StartGame")
+    startgameButton.addEventListener('click', () => sendMessage(ws, "start"))
     document.addEventListener('keydown', function(event){
       if (event.key != ' '){
         charspressed++

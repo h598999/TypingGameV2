@@ -43,6 +43,9 @@ body {
 .red{
     color: red;
 }
+.grey{
+    color: grey;
+}
 
 .container{
     text-align: center;
@@ -54,6 +57,15 @@ body {
     width: 2.5px;
     height: 1.5em;
     background-color: goldenrod;
+    transition: left 0.1s, top 0.1s;
+    /* animation: blink 1s step-end infinite; */
+}
+
+.enemyCursor {
+    position: absolute;
+    width: 2.5px;
+    height: 1.5em;
+    background-color: darkred;
     transition: left 0.1s, top 0.1s;
     /* animation: blink 1s step-end infinite; */
 }

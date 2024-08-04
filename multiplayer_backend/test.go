@@ -23,9 +23,15 @@ type Client struct {
 }
 
 type Message struct{
+  TYPE string `json:"type"`
   ID string `json:"id"`
   WPM string `json:"wpm"`
   CURSORPOSITION string `json:"cursor"`
+}
+
+type GameStateChange struct{
+  ID string `json:"id"`
+  STATE string `json:"state"`
 }
 
 type Lobby struct {
@@ -86,6 +92,17 @@ func (lobby *Lobby) run(){
       }
       lobby.mutex.Unlock()
 
+    case GameStateChange := <- lobby.broadcast:
+      lobby.mutex.Lock()
+      for client := range lobby.clients{
+        err := client.conn.WriteMessage(websocket.TextMessage, GameStateChange)
+        if err != nil{
+          log.Print("Error sending message: ", err)
+          client.conn.Close()
+          delete(lobby.clients, client)
+        }
+      }
+      lobby.mutex.Unlock()
     }
   }
 }

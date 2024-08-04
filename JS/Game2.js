@@ -1,6 +1,9 @@
 import { fetchLorem, fetchWords } from "./wordClient.js"
 import { WPMCalculator } from "./WPMCalculator.js"
 // import  {WebSocketManager} from "./websocket_game.js"
+//
+const params = new URLSearchParams(window.location.search);
+const lobbyId = params.get('lobbyid');
 
 function generateUniqueId() {
   return 'xxxxxx'.replace(/x/g, function() {
@@ -8,15 +11,16 @@ function generateUniqueId() {
   }) + Date.now().toString(16);
 }
 
+let enemyWPM = 0
 const clientid = generateUniqueId()
 
-function setupWebSocket(lobbyId) {
+function setupWebSocket(lobbyId, cursor, wordDiv) {
    let ws = new WebSocket("ws://localhost:8080/ws");
 
     ws.addEventListener('open', function () {
         console.log("Connected to the WebSocket");
-        const initialMessage = JSON.stringify({ lobbyid: lobbyId, clientid: clientid});
-        ws.send(initialMessage);
+      const initialMessage = JSON.stringify({clientid: clientid, lobbyId: lobbyId});
+      ws.send(initialMessage);
     });
 
     ws.addEventListener('error', function (event) {
@@ -28,9 +32,19 @@ function setupWebSocket(lobbyId) {
     });
 
     ws.onmessage = function (event) {
-        const message = JSON.parse(event.data);
+      const message = JSON.parse(event.data);
       if ( message.clientid  != clientid){
         console.log(message)
+      
+      if (message.type == "state"){
+        if (message.state == "finish"){
+          endGame(0,"Lost")
+        }
+      }
+      if (message.type == "message"){
+        enemyWPM = parseInt(message.wpm)
+        updateEnemyCursorPosition(cursor, wordDiv, parseInt(message.index))
+      }
       }
     };
   return ws
@@ -38,9 +52,23 @@ function setupWebSocket(lobbyId) {
 
 function sendMessage(ws, pressedchars, pressedspace) {
     const message = {
+        type: "message",
         clientid: clientid,
         wpm: pressedchars, // Replace with dynamic username
         index: pressedspace
+    };
+    if (ws) {
+        ws.send(JSON.stringify(message));
+    } else {
+        alert("WebSocket connection is not established.");
+    }
+}
+
+function sendStateMessage(ws, state) {
+    const message = {
+        type: "state",
+        clientid: clientid,
+        state: state
     };
     if (ws) {
         ws.send(JSON.stringify(message));
@@ -82,7 +110,7 @@ function newWord(gameContainer, wordCount, words) {
   }
 }
 
-function endGame(wpm){
+function endGame(wpm, result){
   document.body.innerHTML = ''
   // Create new elements and add new functionality
   const resultDiv = document.createElement('div');
@@ -91,8 +119,11 @@ function endGame(wpm){
   const wpmDisplay = document.createElement('h2');
   wpmDisplay.id = 'wpm-display';
 
-  const accuracyDisplay = document.createElement('h2');
-  accuracyDisplay.id = 'accuracy-display';
+  const enemydisplay = document.createElement('h2');
+  enemydisplay.id = 'enemy-display';
+
+  const resultdisplay = document.createElement('h2');
+  resultdisplay.id = 'result-display';
 
   const restartButton = document.createElement('button');
   restartButton.textContent = 'Restart';
@@ -101,23 +132,38 @@ function endGame(wpm){
   // Add new elements to the body
   document.body.appendChild(resultDiv);
   document.body.appendChild(wpmDisplay);
-  document.body.appendChild(accuracyDisplay);
+  document.body.appendChild(enemydisplay);
+  document.body.appendChild(resultdisplay);
   document.body.appendChild(restartButton);
 
   // Display results
   wpmDisplay.textContent = `WPM: ${wpm}`;
+  enemydisplay.textContent = `EnemyWPM: ${enemyWPM}`
+
+  if (result == "won"){
+    resultdisplay.textContent = "You won!"
+  } else {
+    resultdisplay.textContent = "You Lost!"
+  }
 
   // Add new functionality
   restartButton.addEventListener('click', () => {
     location.reload(); // This will refresh the page, restarting the game
   });
 }
+function updateEnemyCursorPosition(cursor,wordDiv, index) {
+  const prevChar = wordDiv.children[index-1]
+  if (!prevChar.classList.contains("green")){
+    prevChar.classList.add("grey")
+  }
+  const currentChar = wordDiv.children[index];
+  const rect = currentChar.getBoundingClientRect();
+  const parentRect = wordDiv.getBoundingClientRect();
+  cursor.style.left = `${rect.left - parentRect.left}px`;
+  cursor.style.top = `${rect.top - parentRect.top}px`;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const lobbyId = "1"
-
-  const ws = setupWebSocket(lobbyId)
-
   // const Lorem = await fetchLorem();
   const calc = new WPMCalculator();
   const Words = await fetchWords();
@@ -137,6 +183,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const cursor = document.createElement('span');
   cursor.classList.add('cursor');
   wordDiv.appendChild(cursor);
+
+  const enemycursor = document.createElement('span');
+  enemycursor.classList.add('enemyCursor')
+  wordDiv.appendChild(enemycursor);
+
+  const ws = setupWebSocket(lobbyId, enemycursor, wordDiv)
+
 
   function updateCursorPosition() {
     const currentChar = wordDiv.children[index];
@@ -169,7 +222,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (index === dbwords.length) {
       console.log("You finished with a WPM of: " + calc.calculateWPM().wpm)
-      endGame(calc.calculateWPM().wpm)
+      sendStateMessage(ws, "finish")
+      endGame(calc.calculateWPM().wpm, "won")
       document.removeEventListener('keydown', handleKeyDown)
     }
   }
