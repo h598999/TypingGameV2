@@ -159,7 +159,7 @@ func (u *UserDAO) TestConn(){
 func NewUserDAO() (UserDAO) {
   cfg := mysql.Config{
     User: "root",
-    Passwd: "JOnas0909",
+    Passwd: "Test123",
     Net: "tcp",
     Addr: "127.0.0.1",
     DBName: "typinggame_users",

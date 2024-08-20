@@ -1,11 +1,18 @@
-export class WebSocketManager {
-  constructor(){}
-  setupWebSocket(lobbyId) {
+
+export class WebSocketBuilder {
+
+  constructor(clientid, lobbyid){
+    this.clientid = clientid;
+    this.lobbyid = lobbyid;
+    this.ws = null
+  }
+
+  setupWebSocket() {
     let ws = new WebSocket("ws://localhost:8080/ws");
 
     ws.addEventListener('open', function () {
       console.log("Connected to the WebSocket");
-      const initialMessage = JSON.stringify({ lobbyid: lobbyId });
+      const initialMessage = JSON.stringify({ lobbyid: self.lobbyId });
       ws.send(initialMessage);
     });
 
@@ -16,25 +23,17 @@ export class WebSocketManager {
     ws.addEventListener('close', function () {
       console.log("WebSocket is closed now.");
     });
+    this.ws = ws
+    return this
+}
 
-    ws.onmessage = function (event) {
-      const message = JSON.parse(event.data);
-      console.log(message);
-    };
+setOnMessage(f){
+  this.ws.onmessage = f
+  return this
+}
 
-    return ws;
-  }
-
-  sendMessage(ws, wpm, cursor){
-    const message = {
-        wpm: wpm, // Replace with dynamic username
-        cursor: cursor 
-    };
-    if (ws) {
-        ws.send(JSON.stringify(message));
-    } else {
-        alert("WebSocket connection is not established.");
-    }
-  }
+getWS(){
+  return this.ws
+}
 }
 
